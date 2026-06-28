@@ -9,15 +9,17 @@ A full-stack inventory management system for an electronics store with PostgreSQ
 - **Database Integration**: PostgreSQL for persistent data storage
 - **Form Validation**: Input validation using express-validator
 - **Responsive UI**: Clean, modern interface with EJS templating
+- **Cascade Deletion**: Deleting a category automatically removes all its items
 
 ## Tech Stack
 
-- Node.js
-- Express.js
-- EJS (Embedded JavaScript templating)
-- PostgreSQL (pg library)
-- express-validator
-- dotenv (environment variables)
+- **Runtime**: Node.js (CommonJS)
+- **Framework**: Express 5
+- **Templating**: EJS with a shared `layout.ejs` wrapper
+- **Database**: PostgreSQL via `pg` connection pool
+- **Validation**: express-validator
+- **Dev tools**: nodemon, Jest
+- **Other**: dotenv (environment variables)
 
 ## Setup Instructions
 
@@ -50,6 +52,7 @@ psql -U postgres -d inventory_app -f db/schema.sql
 ```
 
 Or use psql interactively:
+
 ```bash
 psql -U postgres -d inventory_app
 \i db/schema.sql
@@ -67,17 +70,25 @@ This will create 5 categories (Smartphones, Laptops, Audio, Gaming, Cameras) wit
 
 ### 5. Start the Server
 
+**Production mode:**
+
 ```bash
 npm start
 ```
 
-The server will start on `http://localhost:3000`
+**Development mode (with auto-restart):**
+
+```bash
+npm run dev
+```
+
+The server will start on `http://localhost:3000` (or the port configured in your `.env` file).
 
 ## Usage
 
 ### Managing Categories
 
-1. **View All Categories**: Navigate to the home page
+1. **View All Categories**: Navigate to the home page (`/categories`)
 2. **Create Category**: Click "New Category" in the navigation
 3. **View Category Items**: Click "View Items" on any category
 4. **Edit Category**: Click "Edit" on any category
@@ -90,59 +101,116 @@ The server will start on `http://localhost:3000`
 3. **Edit Item**: Click "Edit" on any item
 4. **Delete Item**: Click "Delete" on any item
 
+## Route Map
+
+| Method | Path                     | Description                |
+| ------ | ------------------------ | -------------------------- |
+| GET    | `/`                      | Redirects to `/categories` |
+| GET    | `/categories`            | List all categories        |
+| GET    | `/categories/new`        | Show create category form  |
+| POST   | `/categories/new`        | Create a new category      |
+| GET    | `/categories/:id`        | View category detail       |
+| GET    | `/categories/:id/edit`   | Show edit category form    |
+| POST   | `/categories/:id/edit`   | Update a category          |
+| POST   | `/categories/:id/delete` | Delete a category          |
+| GET    | `/items/new/:categoryId` | Show create item form      |
+| POST   | `/items/new/:categoryId` | Create a new item          |
+| GET    | `/items/:id/edit`        | Show edit item form        |
+| POST   | `/items/:id/edit`        | Update an item             |
+| POST   | `/items/:id/delete`      | Delete an item             |
+
 ## Database Schema
 
 ### Categories Table
-- `id` (SERIAL PRIMARY KEY)
-- `name` (VARCHAR(100) NOT NULL)
-- `description` (TEXT)
-- `created_at` (TIMESTAMP)
+
+| Column      | Type         | Constraints   |
+| ----------- | ------------ | ------------- |
+| id          | SERIAL       | PRIMARY KEY   |
+| name        | VARCHAR(100) | NOT NULL      |
+| description | TEXT         |               |
+| created_at  | TIMESTAMP    | DEFAULT NOW() |
 
 ### Items Table
-- `id` (SERIAL PRIMARY KEY)
-- `name` (VARCHAR(200) NOT NULL)
-- `description` (TEXT)
-- `price` (DECIMAL(10,2) NOT NULL)
-- `quantity` (INTEGER DEFAULT 0)
-- `sku` (VARCHAR(50) UNIQUE)
-- `brand` (VARCHAR(100))
-- `category_id` (INTEGER REFERENCES categories(id))
-- `created_at` (TIMESTAMP)
+
+| Column      | Type          | Constraints                                 |
+| ----------- | ------------- | ------------------------------------------- |
+| id          | SERIAL        | PRIMARY KEY                                 |
+| name        | VARCHAR(200)  | NOT NULL                                    |
+| description | TEXT          |                                             |
+| price       | DECIMAL(10,2) | NOT NULL                                    |
+| quantity    | INTEGER       | DEFAULT 0                                   |
+| sku         | VARCHAR(50)   | UNIQUE                                      |
+| brand       | VARCHAR(100)  |                                             |
+| category_id | INTEGER       | REFERENCES categories(id) ON DELETE CASCADE |
+| created_at  | TIMESTAMP     | DEFAULT NOW()                               |
+
+An index exists on `items.category_id` for faster lookups.
 
 ## Project Structure
 
 ```
 inventory-app/
-├── app.js                 # Main application entry point
+├── app.js                 # Entry point, middleware, route mounting
 ├── package.json           # Dependencies and scripts
 ├── .env                   # Environment variables (not in git)
-├── .gitignore            # Git ignore rules
+├── .gitignore             # Git ignore rules
+├── AGENTS.md              # Agent guide with project conventions
 ├── db/
-│   ├── pool.js           # PostgreSQL connection pool
-│   ├── queries.js        # Database query functions
-│   ├── schema.sql        # Database schema
-│   └── populatedb.js     # Seed script
+│   ├── pool.js            # PostgreSQL connection pool
+│   ├── queries.js         # All SQL query functions (parameterized)
+│   ├── schema.sql         # Table definitions + indexes
+│   └── populatedb.js      # Seed script for sample data
 ├── controllers/
 │   ├── categoriesController.js
 │   └── itemsController.js
 ├── routes/
-│   ├── indexRouter.js
+│   ├── indexRouter.js     # Root redirect, mounts sub-routers
 │   ├── categoriesRouter.js
 │   └── itemsRouter.js
+├── utils/
+│   └── renderPage.js      # Wraps res.render with layout + status handling
 └── views/
-    ├── layout.ejs        # Base template
-    ├── index.ejs         # Home page
-    ├── category.ejs      # Category detail page
-    ├── category-form.ejs # Category create/edit form
-    ├── item-form.ejs     # Item create/edit form
-    └── error.ejs         # Error page
+    ├── layout.ejs         # Base HTML shell (shared wrapper)
+    ├── index.ejs          # Home page (category list)
+    ├── category.ejs       # Category detail + item list
+    ├── category-form.ejs  # Category create/edit form
+    ├── item-form.ejs      # Item create/edit form
+    └── error.ejs          # Error page
 ```
+
+## Development
+
+### Available Scripts
+
+| Script         | Command                 | Description                        |
+| -------------- | ----------------------- | ---------------------------------- |
+| `npm start`    | `node app.js`           | Start production server            |
+| `npm run dev`  | `nodemon app.js`        | Start dev server with auto-restart |
+| `npm run seed` | `node db/populatedb.js` | Seed database with sample data     |
+
+### Testing
+
+```bash
+npm test
+```
+
+Jest is configured and tests can be placed in the project root or a `tests/` directory.
+
+## Project Conventions
+
+- **Thin routes, fat controllers**: Routes only map to controller exports; all logic lives in controllers.
+- **Database layer**: `db/queries.js` exports async query functions used by controllers. Uses parameterized queries (`$1`, `$2`) to prevent SQL injection.
+- **Rendering**: `utils/renderPage.js` wraps EJS rendering with a shared `layout.ejs`. Controllers call `renderPage(res, view, locals, statusCode)`.
+- **Validation**: express-validator chains in controller files. Post handlers use `validationResult(req)` and `matchedData(req)`.
+- **SKU normalization**: Blank SKUs are normalized to `null` to satisfy `UNIQUE` constraints.
+- **Cascade deletes**: Deleting a category removes its items via `ON DELETE CASCADE`.
 
 ## Troubleshooting
 
 ### Database Connection Error
 
 If you see a connection error, verify:
+
 1. PostgreSQL is running
 2. Database `inventory_app` exists
 3. Credentials in `.env` are correct
@@ -155,6 +223,10 @@ If port 3000 is already in use, you can set a different port:
 ```bash
 PORT=3001 npm start
 ```
+
+### Unique Constraint Violation (SKU)
+
+A PostgreSQL error code `23505` (unique violation) is returned if a duplicate SKU is submitted. Enter a unique SKU or leave it blank to auto-normalize.
 
 ## License
 

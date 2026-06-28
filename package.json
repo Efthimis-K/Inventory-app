@@ -14,10 +14,10 @@
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^17.4.2",
-    "ejs": "^5.0.2",
+    "ejs": "^6.0.0",
     "express": "^5.2.1",
     "express-validator": "^7.3.2",
-    "pg": "^8.20.0"
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "jest": "^30.4.2",
