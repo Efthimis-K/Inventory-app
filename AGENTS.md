@@ -100,6 +100,6 @@ inventory-app/
 
 ## Additional Notes
 
-- since you might encounter EPERM errors, try to execute commands using powershell.
-- When asked to make edits or search for latest versions of packages or libraries, use context7. Search first if it exists, then use it.
+- Since you might encounter EPERM errors, try to execute commands using powershell.
+- When asked to make edits or search for latest versions of packages or libraries, use context7. Search first if context7 exists, then use it.
 - Before ending a task, always validate if the solution is working. That means you might have to re-run the solution and check if it works.
