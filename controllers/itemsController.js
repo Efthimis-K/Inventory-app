@@ -39,15 +39,17 @@ function isDuplicateSkuError(error) {
   return error && error.code === "23505";
 }
 
-function handleParamError(req, res) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
+function handleParamError(req, res, message = "The provided ID is not valid.") {
+  const allErrors = validationResult(req).array();
+  const paramErrors = allErrors.filter((e) => e.location === "params");
+
+  if (paramErrors.length > 0) {
     return renderPage(
       res,
       "error",
       {
         title: "Invalid Request",
-        message: "The provided ID is not valid.",
+        message: message,
       },
       400,
     );
@@ -59,18 +61,7 @@ exports.itemCreateGet = [
   validateCategoryId,
   async (req, res) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return renderPage(
-          res,
-          "error",
-          {
-            title: "Invalid Request",
-            message: "The provided category ID is not valid.",
-          },
-          400,
-        );
-      }
+      if (handleParamError(req, res, "The provided category ID is not valid.")) return;
       const category = await db.getCategoryById(req.params.categoryId);
       if (!category) {
         return renderPage(
@@ -110,20 +101,7 @@ exports.itemCreatePost = [
   validateCategoryId,
   async (req, res) => {
     try {
-      const paramErrors = validationResult(req)
-        .array()
-        .filter((error) => error.path === "categoryId");
-      if (paramErrors.length > 0) {
-        return renderPage(
-          res,
-          "error",
-          {
-            title: "Invalid Request",
-            message: "The provided category ID is not valid.",
-          },
-          400,
-        );
-      }
+      if (handleParamError(req, res, "The provided category ID is not valid.")) return;
       const category = await db.getCategoryById(req.params.categoryId);
       if (!category) {
         return renderPage(
@@ -201,18 +179,7 @@ exports.itemUpdateGet = [
   validateItemId,
   async (req, res) => {
     try {
-      const paramErrors = validationResult(req);
-      if (!paramErrors.isEmpty()) {
-        return renderPage(
-          res,
-          "error",
-          {
-            title: "Invalid Request",
-            message: "The provided item ID is not valid.",
-          },
-          400,
-        );
-      }
+      if (handleParamError(req, res, "The provided item ID is not valid.")) return;
       const item = await db.getItemById(req.params.id);
       const categories = await db.getAllCategories();
       if (!item) {
@@ -253,20 +220,7 @@ exports.itemUpdatePost = [
   validateItemId,
   async (req, res) => {
     try {
-      const allErrors = validationResult(req).array();
-      const paramErrors = allErrors.filter((e) => e.location === "params");
-
-      if (paramErrors.length > 0) {
-        return renderPage(
-          res,
-          "error",
-          {
-            title: "Invalid Request",
-            message: "The provided item ID is not valid.",
-          },
-          400,
-        );
-      }
+      if (handleParamError(req, res, "The provided item ID is not valid.")) return;
       const item = await db.getItemById(req.params.id);
       const categories = await db.getAllCategories();
       if (!item) {
@@ -280,6 +234,7 @@ exports.itemUpdatePost = [
           404,
         );
       }
+      const allErrors = validationResult(req).array();
       const formData = matchedData(req);
       const formErrors = allErrors.filter((e) => e.location === "body");
       const categoryExists = categories.some(
@@ -355,18 +310,7 @@ exports.itemUpdatePost = [
 exports.itemDeletePost = [
   validateItemId,
   async (req, res) => {
-    const paramErrors = validationResult(req);
-    if (!paramErrors.isEmpty()) {
-      return renderPage(
-        res,
-        "error",
-        {
-          title: "Invalid Request",
-          message: "The provided item ID is not valid.",
-        },
-        400,
-      );
-    }
+      if (handleParamError(req, res, "The provided item ID is not valid.")) return;
     const item = await db.getItemById(req.params.id);
     if (!item) {
       return renderPage(
