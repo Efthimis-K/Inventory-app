@@ -202,17 +202,49 @@ exports.categoryUpdatePost = [
   validateCategoryId,
   async (req, res) => {
     try {
-      const paramErrors = validationResult(req);
-      if (!paramErrors.isEmpty()) {
-        return renderPage(
-          res,
-          "error",
-          {
-            title: "Invalid Request",
-            message: "The provided ID is not valid.",
-          },
-          400,
-        );
+      const validationErrors = validationResult(req);
+      if (!validationErrors.isEmpty()) {
+        const paramErrors = validationErrors.mappedErrors["id"];
+        const bodyErrors =
+          validationErrors.mappedErrors["name"] ||
+          validationErrors.mappedErrors["description"];
+
+        if (paramErrors && paramErrors.length > 0) {
+          return renderPage(
+            res,
+            "error",
+            {
+              title: "Invalid Request",
+              message: "The provided ID is not valid.",
+            },
+            400,
+          );
+        }
+
+        if (bodyErrors && bodyErrors.length > 0) {
+          const category = await db.getCategoryById(req.params.id);
+          if (!category) {
+            return renderPage(
+              res,
+              "error",
+              {
+                title: "Category Not Found",
+                message: "The requested category does not exist.",
+              },
+              404,
+            );
+          }
+          return renderPage(
+            res,
+            "category-form",
+            {
+              title: "Update Category",
+              category,
+              errors: bodyErrors.map((err) => err.msg),
+            },
+            400,
+          );
+        }
       }
       const category = await db.getCategoryById(req.params.id);
       if (!category) {
@@ -224,19 +256,6 @@ exports.categoryUpdatePost = [
             message: "The requested category does not exist.",
           },
           404,
-        );
-      }
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return renderPage(
-          res,
-          "category-form",
-          {
-            title: "Update Category",
-            category,
-            errors: errors.array(),
-          },
-          400,
         );
       }
       const { name, description } = matchedData(req);
@@ -284,6 +303,18 @@ exports.categoryDeletePost = [
             message: `Cannot delete category "${category.name}" because it contains ${itemCount} item(s). Please delete or reassign the items first.`,
           },
           400,
+        );
+      }
+      const category = await db.getCategoryById(req.params.id);
+      if (!category) {
+        return renderPage(
+          res,
+          "error",
+          {
+            title: "Category Not Found",
+            message: "The requested category does not exist.",
+          },
+          404,
         );
       }
       await db.deleteCategory(req.params.id);

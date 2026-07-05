@@ -110,8 +110,10 @@ exports.itemCreatePost = [
   validateCategoryId,
   async (req, res) => {
     try {
-      const paramErrors = validationResult(req);
-      if (!paramErrors.isEmpty()) {
+      const paramErrors = validationResult(req)
+        .array()
+        .filter((error) => error.path === "categoryId");
+      if (paramErrors.length > 0) {
         return renderPage(
           res,
           "error",
@@ -251,8 +253,10 @@ exports.itemUpdatePost = [
   validateItemId,
   async (req, res) => {
     try {
-      const paramErrors = validationResult(req);
-      if (!paramErrors.isEmpty()) {
+      const allErrors = validationResult(req).array();
+      const paramErrors = allErrors.filter((e) => e.location === "params");
+
+      if (paramErrors.length > 0) {
         return renderPage(
           res,
           "error",
@@ -277,7 +281,7 @@ exports.itemUpdatePost = [
         );
       }
       const formData = matchedData(req);
-      const formErrors = validationResult(req).array();
+      const formErrors = allErrors.filter((e) => e.location === "body");
       const categoryExists = categories.some(
         (category) => category.id === formData.category_id,
       );

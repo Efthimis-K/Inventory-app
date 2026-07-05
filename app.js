@@ -19,7 +19,7 @@ app.use((err, req, res, next) => {
   res.status(500).render("error", {
     title: "Server Error",
     message: "An unexpected error occurred.",
-  }, 500);
+  });
 });
 
 if (require.main === module) {
