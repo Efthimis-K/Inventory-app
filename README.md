@@ -9,7 +9,7 @@ A full-stack inventory management system for an electronics store with PostgreSQ
 - **Database Integration**: PostgreSQL for persistent data storage
 - **Form Validation**: Input validation using express-validator
 - **Responsive UI**: Clean, modern interface with EJS templating
-- **Cascade Deletion**: Deleting a category automatically removes all its items
+- **Category Deletion Protection**: Deleting a category is only permitted if it contains no items, preventing accidental loss of product data. (The database schema defines `ON DELETE CASCADE` on `items.category_id`, but the controller enforces this validation check before performing the delete.)
 
 ## Tech Stack
 
@@ -184,17 +184,13 @@ inventory-app/
 
 | Script         | Command                 | Description                        |
 | -------------- | ----------------------- | ---------------------------------- |
-| `npm start`    | `node app.js`           | Start production server            |
+| `npm start`    | `app.js`                | Start production server            |
 | `npm run dev`  | `nodemon app.js`        | Start dev server with auto-restart |
 | `npm run seed` | `node db/populatedb.js` | Seed database with sample data     |
 
 ### Testing
 
-```bash
-npm test
-```
-
-Jest is configured and tests can be placed in the project root or a `tests/` directory.
+Jest is installed as a development dependency in `package.json`, but no test suite or `test` script is currently configured.
 
 ## Project Conventions
 
@@ -203,7 +199,7 @@ Jest is configured and tests can be placed in the project root or a `tests/` dir
 - **Rendering**: `utils/renderPage.js` wraps EJS rendering with a shared `layout.ejs`. Controllers call `renderPage(res, view, locals, statusCode)`.
 - **Validation**: express-validator chains in controller files. Post handlers use `validationResult(req)` and `matchedData(req)`.
 - **SKU normalization**: Blank SKUs are normalized to `null` to satisfy `UNIQUE` constraints.
-- **Cascade deletes**: Deleting a category removes its items via `ON DELETE CASCADE`.
+- **Category deletion**: Although the database schema defines `ON DELETE CASCADE` for items, the controller (`categoriesController.js`) enforces that a category can only be deleted if it contains zero items to safeguard data.
 
 ## Troubleshooting
 
